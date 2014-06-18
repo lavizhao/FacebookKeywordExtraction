@@ -8,17 +8,25 @@ import cPickle as pickle
 import os
 import re
 
+#rake
+from rake import Rake
+rake = Rake()
+
 #nltk
 import nltk
 from nltk.util import clean_html
 from nltk.util import clean_url
 
+#nlp
+from nlp import nlp
+mnlp = nlp()
+
 tag_re = re.compile(r"<p>(.+?)</p>",re.DOTALL)
 
 dp = config("../conf/dp.conf")
+
 #这个函数的作用是去重
 #先读取title，然后和test的title相对比，看看有没有重的
-
 def remove_duplicate():
     dup = open(dp["dup_test"],"w")
     other = open(dp["other_test"],"w")
@@ -54,6 +62,7 @@ def remove_duplicate():
 
         a += 1
 
+#将测试集所有的编号写入到文件中
 def extract_id():
     f = open(dp["raw_test"])
     reader = csv.reader(f)
@@ -67,11 +76,13 @@ def extract_id():
     t = open(dp["id"],"wb")
     pickle.dump(result,t)    
 
+#得到测试集全部的编号
 def load_id():
     f = open(dp["id"])
     test_id = pickle.load(f)
     return test_id
 
+#生成最后结果
 def gen_submission(ndup_test,comp=True):
     print "生成最后结果"
     print "载入test的所有id"
@@ -100,6 +111,7 @@ def gen_submission(ndup_test,comp=True):
         print "打压缩包"
         os.system("gzip %s"%(dp["result"]))
 
+#去除html网页里面的代码<pre><code>
 def get_context(text):
     cont = tag_re.findall(text)
     if len(cont) == 0:
@@ -156,7 +168,23 @@ def remove_tag():
         a += 1
         if a % 10000 == 0:
             print a
-            
+
+#这个函数用来测试rake算法，其实rake的效果也不是特别好            
+def test_rake():
+    f = open(dp["ntag_train"])
+    reader = csv.reader(f)
+    a = 0
+    for line in reader:
+        keywords = rake.run(line[2])
+        #keywords = mnlp.noun(line[1])
+        print line[22]
+        print keywords
+        print line[3]
+        print 40*"="
+        a += 1
+        if a >= 10:
+            break
+    
 def main(options):
     if options.task == "remove_dup":
         remove_duplicate()
@@ -164,6 +192,9 @@ def main(options):
         extract_id()
     elif options.task == "remove_tag":
         remove_tag()
+
+    elif options.task == "test_rake":
+        test_rake()
 
 #读入duplicate
 def load_dup():

@@ -56,7 +56,26 @@ class nlp:
                     clean_result.append(nword)
             return clean_result
         return result
-        
+
+    def edit_distance(self,word1, word2):
+        matrixTable = [[i for i in range(len(word2)+1)] for j in range(len(word1)+1)]
+
+        for i in range(len(word1)+1):
+            matrixTable[i][0] = i
+  
+        for i in range(1, len(word1)+1):
+            for j in range(1, len(word2)+1):
+                top = matrixTable[i-1][j] + 1
+                left = matrixTable[i][j-1] + 1
+                if word1[i-1:i] == word2[j-1:j]:
+                    topLeft = matrixTable[i-1][j-1]
+                else:
+                    topLeft = matrixTable[i-1][j-1] + 1
+                matrixTable[i][j] = min(top, left, topLeft)
+
+
+        return matrixTable[len(word1)][len(word2)]
+                
     #这个东西可能用着不太好，暂时先别用
     def noun_p(self,text):
         blob = self.tb(text)
@@ -79,4 +98,4 @@ if __name__ == '__main__':
     Technology Need,"Each day we start our instruction with literacy. The students love to read non-fiction. They frequently ask to research what they have been reading. In our second grade class, I have 19 students....,My students need an iPad with a case and screen protector for the classroom.,"Each day we start our instruction with literacy. The students love to read non-fiction. They frequently ask to research\nIn our second grade class, I have 19 students. They are very energetic and always enjoy using technology in the classroom. Some students have opportunities to use technology at home but many do not. Our school is small and very rural. Our\nThe students would love to have an iPad mini with a case and screen protector to read, do learning activities, and research topics. We currently do not have an iPad in our classroom. We have two working computers and the more technology t\nThis technology will enhance the learning of the students in my classroom everyday. They will get to use this iPad mini to read, do learning activities, and research topics. Right now, it is hard for all of them to get to use the computer. I will be able to assign each student time weekly to further their instruction. 
     '''
     print mn.token(a)
-
+    print mn.edit_distance("coreplot","core-plot")
