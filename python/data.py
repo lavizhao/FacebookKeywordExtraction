@@ -74,7 +74,7 @@ def extract_id():
             print a
         a += 1
     t = open(dp["id"],"wb")
-    pickle.dump(result,t)    
+    pickle.dump(result,t,True)    
 
 #得到测试集全部的编号
 def load_id():
@@ -184,6 +184,60 @@ def test_rake():
         a += 1
         if a >= 10:
             break
+
+#这个函数的作用是构造两个矩阵，用dict存储，作用是当到时候分类用
+def word_matrix():
+    #两个矩阵
+    word_tag = {}
+    tag = {}
+
+    a = 0
+    #先开train文件
+    f = open(dp["ntag_train"])
+    reader = csv.reader(f)
+    for line in reader:
+        atitle,abody,atag = line[1],line[2],line[3]
+        atag = atag.split()
+        for aatag in atag:
+            if aatag not in tag:
+                tag[aatag] = 1
+            else:
+                tag[aatag] += 1
+
+        #先提取关键词
+        if len(atitle) != 0:
+            keyword1 = rake.run(atitle)
+            for (w,t) in keyword1:
+                if len(w) <= 3 or t == 0:
+                    continue
+                if w not in word_tag:
+                    word_tag[w] = {}
+                for aatag in atag:
+                    if aatag not in word_tag[w]:
+                        word_tag[w][aatag] = t
+                    else:
+                        word_tag[w][aatag] += t
+        '''            
+        if len(abody) != 0:
+            keyword2 = rake.run(abody)
+            for (w,t) in keyword2:
+                if w not in word_tag:
+                    word_tag[w] = {}
+                for aatag in atag:
+                    if aatag not in word_tag[w]:
+                        word_tag[w][aatag] = t
+                    else:
+                        word_tag[w][aatag] += t
+        '''
+        a += 1
+        if a%1000 == 0:
+            print a
+
+    print "写入文件"
+    t = open(dp["word_tag"],"wb")
+    pickle.dump(word_tag,t,True)
+    t = open(dp["tag"],"wb")
+    pickle.dump(tag,t,True)
     
 def main(options):
     if options.task == "remove_dup":
@@ -195,6 +249,8 @@ def main(options):
 
     elif options.task == "test_rake":
         test_rake()
+    elif options.task == "word_matrix":
+        word_matrix()
 
 #读入duplicate
 def load_dup():
