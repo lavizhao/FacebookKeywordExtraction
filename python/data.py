@@ -187,16 +187,19 @@ def test_rake():
 
 #这个函数的作用是构造两个矩阵，用dict存储，作用是当到时候分类用
 def word_matrix():
+    vocab = load_testwords()
+    
     #两个矩阵
     word_tag = {}
     tag = {}
+    word_count = {}
 
     a = 0
     #先开train文件
     f = open(dp["ntag_train"])
     reader = csv.reader(f)
     for line in reader:
-        atitle,abody,atag = line[1],line[2],line[3]
+        title,atag = line[1],line[3]
         atag = atag.split()
         for aatag in atag:
             if aatag not in tag:
@@ -205,10 +208,10 @@ def word_matrix():
                 tag[aatag] += 1
 
         #先提取关键词
-        if len(atitle) != 0:
-            keyword1 = rake.run(atitle)
+        if len(title)!= 0:
+            keyword1 = rake.run(title)
             for (w,t) in keyword1:
-                if len(w) <= 3 or t == 0:
+                if len(w) <= 3 or t == 0 or w not in vocab:
                     continue
                 if w not in word_tag:
                     word_tag[w] = {}
@@ -217,27 +220,53 @@ def word_matrix():
                         word_tag[w][aatag] = t
                     else:
                         word_tag[w][aatag] += t
-        '''            
-        if len(abody) != 0:
-            keyword2 = rake.run(abody)
-            for (w,t) in keyword2:
-                if w not in word_tag:
-                    word_tag[w] = {}
-                for aatag in atag:
-                    if aatag not in word_tag[w]:
-                        word_tag[w][aatag] = t
-                    else:
-                        word_tag[w][aatag] += t
-        '''
+                        
+                if w not in word_count:
+                    word_count[w] = t
+                else:
+                    word_count[w] += t
         a += 1
-        if a%1000 == 0:
+        if a%10000 == 0:
             print a
 
     print "写入文件"
+    print "词表长度",len(word_tag)
     t = open(dp["word_tag"],"wb")
     pickle.dump(word_tag,t,True)
     t = open(dp["tag"],"wb")
     pickle.dump(tag,t,True)
+    t = open(dp["word_count"],"wb")
+    pickle.dump(word_count,t,True)
+
+def extract_testwords():
+    print "抽取测试集词表"    
+    f = open(dp["ntag_test"])
+    reader = csv.reader(f)
+
+    vocab = []
+
+    a = 0
+    for line in reader:
+        if len(line[1]) > 0:
+            keyword = rake.run(line[1])
+            keys = [w for (w,s) in keyword]
+            vocab.extend(keys)
+
+        a += 1
+        if a%10000 == 0:
+            print a
+
+    vocab = set(vocab)
+    print "词表大小",len(vocab)
+    t = open(dp["test_vocab"],"wb")
+    pickle.dump(vocab,t,True)
+
+def load_testwords():
+    f = open(dp["test_vocab"])
+    
+    vocab = pickle.load(f)
+    print "词表大小",len(vocab)    
+    return vocab
     
 def main(options):
     if options.task == "remove_dup":
@@ -251,6 +280,9 @@ def main(options):
         test_rake()
     elif options.task == "word_matrix":
         word_matrix()
+
+    elif options.task == "extract_testwords":
+        extract_testwords()
 
 #读入duplicate
 def load_dup():

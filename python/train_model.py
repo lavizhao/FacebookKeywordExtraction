@@ -47,6 +47,10 @@ def asrule():
     tag = pickle.load(f)
     print len(tag)
 
+    f = open(dp["word_count"],"rb")
+    word_count = pickle.load(f)
+    print len(word_count)
+    
     a = 0
     f = open(dp["ntag_test"])
     #f = open(dp["ntag_train"])
@@ -54,47 +58,28 @@ def asrule():
     reader = csv.reader(f)
     for line in reader:
         result = {}
-        if len(line[1]) != 0:
-            keyword = rake.run(line[1])
-            for (w,s) in keyword:
-                if w in word_tag:
-                    atag = word_tag[w]
-                    if len(atag) < 2000:
-                        for aatag in atag:
-                            if aatag in result:
-                                result[aatag] += atag[aatag] 
+        text = line[1]
+        if len(line[1]) == 0:
+            text = line[2]
+            
+        if len(text) != 0:
+            keyword = rake.run(text)
+            for (word,score) in keyword:
+                if word in word_tag:
+                    #all_tag 表示有多少标签跟这个词共现的
+                    all_tag = word_tag[word]
+                    if len(all_tag) < 10000:
+                        for one_tag in all_tag:
+                            if one_tag in result:
+                                result[one_tag] += all_tag[one_tag] /word_count[word]
                             else:
-                                result[aatag] = atag[aatag] 
+                                result[one_tag] = all_tag[one_tag] /word_count[word]
 
             #for one_tag in result:
             #    result[one_tag] -= tag[one_tag]/20.0
             result = sorted(result.iteritems(),key=itemgetter(1),reverse=True)
-        '''    
-        tag_set = set([])
-        for (w,s) in keyword:
-            if w in word_tag:
-                atag = word_tag[w]
-                for aatag in atag:
-                    tag_set.add(aatag)
-
-        for aatag in tag_set:
-            result[aatag] = 1.0
         
-        for (w,s) in keyword:
-            if w in word_tag:
-                atag = word_tag[w]
-                for aatag in tag_set:
-                    if aatag in atag:
-                        result[aatag] *= atag[aatag]/tag[aatag]
-                    else:
-                        result[aatag] *= 0.1
-
-        for atag in result:
-            result[atag] *= tag[atag]
-            
-        result = sorted(result.iteritems(),key=itemgetter(1),reverse=True)
-        '''
-            
+        
         if len(result) >5:
             result = result[:5]
             #print line[1]
@@ -106,7 +91,7 @@ def asrule():
         else:
             rs = ""
             for (w,t) in result:
-                rs += (" "+w)
+                rs += (w+" ")
         ndup_test[line[0]] = rs
         a += 1
         if a % 100 == 0:
