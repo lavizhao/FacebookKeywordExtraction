@@ -48,24 +48,27 @@ def asrule():
     print len(tag)
 
     a = 0
-    f = open(dp["other_test"])
+    f = open(dp["ntag_test"])
+    #f = open(dp["ntag_train"])
     ndup_test = {}
     reader = csv.reader(f)
     for line in reader:
-        keyword = rake.run(line[1])
         result = {}
-        for (w,s) in keyword:
-            if w in word_tag:
-                atag = word_tag[w]
-                for aatag in atag:
-                    if aatag in result:
-                        result[aatag] += atag[aatag] 
-                    else:
-                        result[aatag] = atag[aatag] 
-        
-        #for atag in result:
-        #    result[atag] += log(tag[atag])
-        #result = sorted(result.iteritems(),key=itemgetter(1),reverse=True)
+        if len(line[1]) != 0:
+            keyword = rake.run(line[1])
+            for (w,s) in keyword:
+                if w in word_tag:
+                    atag = word_tag[w]
+                    if len(atag) < 2000:
+                        for aatag in atag:
+                            if aatag in result:
+                                result[aatag] += atag[aatag] 
+                            else:
+                                result[aatag] = atag[aatag] 
+
+            #for one_tag in result:
+            #    result[one_tag] -= tag[one_tag]/20.0
+            result = sorted(result.iteritems(),key=itemgetter(1),reverse=True)
         '''    
         tag_set = set([])
         for (w,s) in keyword:
@@ -91,9 +94,13 @@ def asrule():
             
         result = sorted(result.iteritems(),key=itemgetter(1),reverse=True)
         '''
-                        
+            
         if len(result) >5:
             result = result[:5]
+            #print line[1]
+            #print result
+            #print "result",line[-1]
+            #print 30*"="
         if len(result) == 0:
             rs = "java python php"
         else:
