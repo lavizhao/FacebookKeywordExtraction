@@ -122,15 +122,56 @@ def basic_recommender(title,body):
         #对于每个body来说
         for word in body_tokens:
             if word in tag_set and word not in result:
-                result[tag_set[word]] = tag[tag_set[word]] * 0.6
+                result[tag_set[word]] = tag[tag_set[word]] * 0.1
 
-        #给他们排一下顺序
-        result = sorted(result.iteritems(),key=itemgetter(1),reverse=True)
-        if len(result) > 5 :
-            return result[:5]
+        return result
+                
+def get_topK(result,K):
+    result = sorted(result.iteritems(),key=itemgetter(1),reverse=True)
+    if len(result) > 5:
+        return result[:K]
+    else :
+        return result
+
+#将二元组转化成字典
+def tuple_to_dict(tp):
+    return {w:t for (w,t) in tp}
+    
+#对字典进行归一化
+def norm(dt):
+    dt_sum = sum(dt.values())
+    for item in dt:
+        dt[item] /= dt_sum
+
+    return dt
+
+#融合多个推荐
+def combine_recommend(basic,title_tag):
+    #第一步，给两个推荐归一化
+    basic = tuple_to_dict(basic)
+    title_tag = tuple_to_dict(title_tag)
+
+    basic = norm(basic)
+    title_tag = norm(title_tag)
+
+    basic_weight = 0.5
+    title_tag_weight = 0.5
+    
+    result = {}
+    for item in basic:
+        if item not in result:
+            result[item] = basic_weight * basic[item]
         else:
-            return result
-            
+            result[item] += basic_weight * basic[item]
+
+    for item in title_tag:
+        if item not in result:
+            result[item] = title_tag_weight * title_tag[item]
+        else:
+            result[item] += title_tag_weight * title_tag[item]
+
+    return get_topK(result,5)
+    
 #类似于关联规则的启发式规则
 def recommend():
     print "得到非duplicate的结果"
@@ -140,26 +181,24 @@ def recommend():
     ndup_test = {}
     reader = csv.reader(f)
     for line in reader:
-        result = title_tag_recommender(line[1],line[2])
-        result = sorted(result.iteritems(),key=itemgetter(1),reverse=True)
+        #考虑融合
+        basic_result = basic_recommender(line[1],line[2])
+        basic_result = get_topK(basic_result,20)
         
-        if len(result) >= 5:
-            result = result[:5]
-            #print line[1]
-            #print result
-            #print "result",line[-1]
-            #print 30*"="
-                
+        title_tag_result = title_tag_recommender(line[1],line[2])
+        title_tag_result = get_topK(title_tag_result,20)
+
+        result = combine_recommend(basic_result,title_tag_result)
+
         if len(result) == 0:
-            result = basic_recommender(line[1],line[2])
-            result = [i for (i,j) in result ]
-            rs = ' '.join(result)
+            rs = "java,python,php"
         else:
-            rs = ""
-            result = [i for (i,j) in result ]
-            rs = ' '.join(result)
+            rs = [w for (w,t) in result]
+            rs = ' '.join(rs)
+            
         ndup_test[line[0]] = rs
         a += 1
+
         if a % 100 == 0:
             print a
     return ndup_test
