@@ -7,6 +7,9 @@ from optparse import OptionParser
 import csv
 import cPickle as pickle
 from operator import itemgetter
+from nlp import nlp
+
+mnlp = nlp()
 
 dp = config("../conf/dp.conf")
 
@@ -37,6 +40,10 @@ print len(word_count)
 f = open(dp["tagrel"],"rb")
 tagrel = pickle.load(f)
 print len(tagrel)
+
+tag_set = {}
+for key in tag:
+    tag_set[key.lower()] = key
 
 def benchmark():
     print "得到非duplicate的结果"
@@ -95,7 +102,35 @@ def title_tag_recommender(title,body):
             return result
         else :
             return context_recommender(body)
+            
+#类似于字符串匹配一样的推荐
+def basic_recommender(title,body):
+    result = {}
     
+    #先tokenize title和body
+    title_tokens,body_tokens = mnlp.title_tokenize(title),mnlp.title_tokenize(body)
+
+    #如果两个都为0
+    if len(title_tokens) == 0 and len(body_tokens) == 0:
+        return [("java",0),("python",0),("php",0)]
+    else:
+        #先对于title的每个词来说
+        for word in title_tokens:
+            if word in tag_set:
+                #这个词的值是word的出现次数
+                result[tag_set[word]] = tag[tag_set[word]]
+        #对于每个body来说
+        for word in body_tokens:
+            if word in tag_set and word not in result:
+                result[tag_set[word]] = tag[tag_set[word]] * 0.6
+
+        #给他们排一下顺序
+        result = sorted(result.iteritems(),key=itemgetter(1),reverse=True)
+        if len(result) > 5 :
+            return result[:5]
+        else:
+            return result
+            
 #类似于关联规则的启发式规则
 def recommend():
     print "得到非duplicate的结果"
@@ -116,9 +151,9 @@ def recommend():
             #print 30*"="
                 
         if len(result) == 0:
-            rs = "java python php"
-            #print line[0],line[1]
-            #print 20*"="
+            result = basic_recommender(line[1],line[2])
+            result = [i for (i,j) in result ]
+            rs = ' '.join(result)
         else:
             rs = ""
             result = [i for (i,j) in result ]

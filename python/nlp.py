@@ -8,6 +8,7 @@ import textblob
 import nltk
 from nltk.tokenize import TreebankWordTokenizer
 from nltk.corpus import stopwords
+import re
 
 #suffix_str = ['ing', 'ly', 'ed', 'ious', 'ies', 'ive', 'es', 's', 'ment']
 suffix_str = ['s','ies','ment','ious','.',',','...',"'s"]
@@ -57,6 +58,8 @@ class nlp:
             return clean_result
         return result
 
+    def in_stop(self,word):
+        return word in in_stop    
     def edit_distance(self,word1, word2):
         matrixTable = [[i for i in range(len(word2)+1)] for j in range(len(word1)+1)]
 
@@ -81,14 +84,17 @@ class nlp:
         blob = self.tb(text)
         return blob.noun_phrases
 
+    def title_tokenize(self,s):
+        return [token for token in re.findall(r'\b\w[\w#+.-]*(?<!\.$)', s.lower()) if token not in self.stopwords and len(token)<30]
+        
     def token(self,text):
         result,clean_result = self.tk.tokenize(text),[]
         for word in result:
             nword = word.lower()
-            nword = small_stem(nword)
+            #nword = small_stem(nword)
             if len(nword) <= 30:
                 clean_result.append(nword)
-        return ' '.join(clean_result)
+        return clean_result
         
 if __name__ == '__main__':
     print "this is test case"
