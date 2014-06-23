@@ -7,6 +7,7 @@ from optparse import OptionParser
 import cPickle as pickle
 import os
 import re
+from itertools import combinations
 
 #rake
 from rake import Rake
@@ -267,6 +268,53 @@ def load_testwords():
     vocab = pickle.load(f)
     print "词表大小",len(vocab)    
     return vocab
+
+def extract_tagrel():
+    #这个文件的目的是抽取tag和tag之间的关系
+
+    result = {}
+    
+    f = open(dp["ntag_train"])
+    reader = csv.reader(f)
+    a = 0
+    for line in reader:
+        if a == 0:
+            a += 1
+            continue
+
+        tags = line[-1].split()
+        for source,target in combinations(tags,2):
+            result.setdefault(source,{})
+            result.setdefault(target,{})
+
+            result[source].setdefault(target,0)
+            result[target].setdefault(source,0)
+
+            result[source][target] += 1
+            result[target][source] += 1
+            
+        a += 1
+        if a %10000 == 0:
+            print a,len(result)
+
+    #衡量置信度关系
+    #我打算将所有的置信度求出来，然后平均
+    #先把tag的数量load进来
+    f = open(dp["tag"])
+    all_tag = pickle.load(f)
+
+    print "删除置信度比较低的tag，置信度阈值设为0.1"
+    final = {}
+    for source in result:
+        final.setdefault(source,{})
+        for target in result[source]:
+            if result[source][target]*1.0/all_tag[source] >= 0.1:
+                final[source][target] = result[source][target]*1.0/all_tag[source]
+
+    result = final
+                
+    t = open(dp["tagrel"],"wb")
+    pickle.dump(result,t,True)
     
 def main(options):
     if options.task == "remove_dup":
@@ -283,6 +331,9 @@ def main(options):
 
     elif options.task == "extract_testwords":
         extract_testwords()
+
+    elif options.task == "extract_tagrel":
+        extract_tagrel()
 
 #读入duplicate
 def load_dup():
