@@ -59,12 +59,12 @@ def split_sentences(text):
     sentences = nltk.sent_tokenize(text)
     result = []
     for s in sentences:
-        if s[-1] == '.' or s[-1] == "?" or s[-1] == "," or s[-1] == ';':
+        if s[-1] == '.' or s[-1] == "?" or s[-1] == "," or s[-1] == ';' or s[-1]=='!':
             result.append(s[:-1])
         else:
             result.append(s)
     
-    return result#sentences
+    return result
 
 
 def build_stop_word_regex(stop_word_file_path):

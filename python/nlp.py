@@ -95,6 +95,12 @@ class nlp:
             if len(nword) <= 30:
                 clean_result.append(nword)
         return clean_result
+
+    def bigrams(self,text):
+        return nltk.bigrams(text)
+
+    def little_stem(self,word):
+        return small_stem(word)
         
 if __name__ == '__main__':
     print "this is test case"

@@ -8,6 +8,8 @@ import csv
 import cPickle as pickle
 from operator import itemgetter
 from nlp import nlp
+from itertools import combinations
+import sys
 
 mnlp = nlp()
 
@@ -43,7 +45,9 @@ print len(tagrel)
 
 tag_set = {}
 for key in tag:
-    tag_set[key.lower()] = key
+    temp = key.split("-")
+    temp = ' '.join(temp)
+    tag_set[temp] = key
 
 def benchmark():
     print "得到非duplicate的结果"
@@ -72,9 +76,9 @@ def context_recommender(text):
                 #对于这些tag的每个tag来说
                 for one_tag in all_tag:
                     if one_tag in result:
-                        result[one_tag] += all_tag[one_tag]/word_count[word]
+                        result[one_tag] += all_tag[one_tag]/word_count[word] #* score #/len(all_tag)
                     else:
-                        result[one_tag] = all_tag[one_tag]/word_count[word]
+                        result[one_tag] = all_tag[one_tag]/word_count[word] #* score #/len(all_tag)
     return result
     
 #这个函数主要利用    
@@ -91,6 +95,8 @@ def title_tag_recommender(title,body):
                     #如果one_tag的结果不在title推荐的result中，那么将其除以10，在继续推荐过去，为什么这样做呢，因为title推荐的质量高一些
                     if one_tag not in title_result:
                         title_result[one_tag] = body_result[one_tag]*1.0/10
+                    else :
+                        title_result[one_tag] += body_result[one_tag]*1.0/10
                 return title_result
             else:
                 return title_result
@@ -114,15 +120,34 @@ def basic_recommender(title,body):
     if len(title_tokens) == 0 and len(body_tokens) == 0:
         return [("java",0),("python",0),("php",0)]
     else:
+        #1-gram
         #先对于title的每个词来说
         for word in title_tokens:
+            if mnlp.little_stem(word) in tag_set:
+                word = mnlp.little_stem(word)
             if word in tag_set:
                 #这个词的值是word的出现次数
-                result[tag_set[word]] = tag[tag_set[word]]
+                ori_word = tag_set[word]
+                result[ori_word] = tag[ori_word]
+
+        #2-gram
+        for (word1,word2) in mnlp.bigrams(title_tokens):
+            w12 = word1 + " " + word2
+            if w12 in tag_set:
+                ori_word = tag_set[w12]
+                if ori_word not in result:
+                    result[ori_word] = tag[ori_word]
+                else:
+                    result[ori_word] += tag[ori_word]
+                
         #对于每个body来说
         for word in body_tokens:
-            if word in tag_set and word not in result:
-                result[tag_set[word]] = tag[tag_set[word]] * 0.1
+            if word in tag_set :
+                ori_word = tag_set[word]
+                if word not in result:
+                    result[ori_word] = tag[ori_word] * 0.1
+                else:
+                    result[ori_word] += tag[ori_word] * 0.1
 
         return result
                 
@@ -170,7 +195,13 @@ def combine_recommend(basic,title_tag):
         else:
             result[item] += title_tag_weight * title_tag[item]
 
-    return get_topK(result,5)
+    final = {}
+            
+    for item in result:
+        if result[item] > 0.04:
+            final[item] = result[item]
+    
+    return get_topK(final,5)
     
 #类似于关联规则的启发式规则
 def recommend():
@@ -195,10 +226,9 @@ def recommend():
         else:
             rs = [w for (w,t) in result]
             rs = ' '.join(rs)
-            
+
         ndup_test[line[0]] = rs
         a += 1
-
         if a % 100 == 0:
             print a
     return ndup_test
