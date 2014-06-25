@@ -76,9 +76,9 @@ def context_recommender(text):
                 #对于这些tag的每个tag来说
                 for one_tag in all_tag:
                     if one_tag in result:
-                        result[one_tag] += all_tag[one_tag]/word_count[word] #* score #/len(all_tag)
+                        result[one_tag] += all_tag[one_tag]/word_count[word] 
                     else:
-                        result[one_tag] = all_tag[one_tag]/word_count[word] #* score #/len(all_tag)
+                        result[one_tag] = all_tag[one_tag]/word_count[word] 
     return result
     
 #这个函数主要利用    
@@ -198,7 +198,7 @@ def combine_recommend(basic,title_tag):
     final = {}
             
     for item in result:
-        if result[item] > 0.04:
+        if result[item] > 0.06:
             final[item] = result[item]
     
     return get_topK(final,5)
